@@ -1,12 +1,18 @@
 from datetime import datetime
+from typing import List
 import stock
-
+import source
 
 class Bridge():
-    def __init__(self) -> None:
+    def __init__(self, source) -> None:
         self.curtime = None
         self.all_tickers = []
         self.cash = 0
+        self.source = source
+        pass
+
+
+    def collect_info(self):
         pass
 
     def is_trading_day(self, date: datetime) -> bool:
@@ -24,10 +30,5 @@ class Bridge():
     def get_market_cap(self, ticker: str) -> float:
         pass
 
-class Simulation():
-    def __init__(self) -> None:
-        pass
-
-
-    def main_loop(self):
+    def execute_orders(self, actions : List[stock.Order]):
         pass

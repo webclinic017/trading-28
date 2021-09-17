@@ -1,12 +1,14 @@
 import datetime
 from typing import List, Tuple
-import simulation
 import stock
 import math
+import bridge
 
 class Strategy():
-    def __init__(self) -> None:
-        pass
+    def __init__(self, date: datetime, bridge: bridge.Bridge) -> None:
+        self.positions : list[stock.Position] = None
+        self.date = date
+        self.bridge = bridge
 
     def actions(self) -> list:   
         '''
@@ -17,10 +19,8 @@ class Strategy():
 
 class SimpleMomentum(Strategy):
     # bridge is the method to get outside information
-    def __init__(self, date: datetime, bridge: simulation.Bridge) -> None:
-        self.positions : list[stock.Position] = None
-        self.date = date
-        self.bridge = bridge
+    def __init__(self, date: datetime, bridge: bridge.Bridge) -> None:
+        super.__init__(date, bridge)
 
 
     def actions(self) -> list:
