@@ -12,8 +12,7 @@ class Bridge():
         pass
 
 
-    def collect_info(self):
-        pass
+
 
     def is_trading_day(self, date: datetime) -> bool:
         pass
@@ -32,3 +31,10 @@ class Bridge():
 
     def execute_orders(self, actions : List[stock.Order]):
         pass
+
+    def __next__(self):
+        self.collect_info()
+
+    def collect_info(self):
+        raise StopIteration
+        

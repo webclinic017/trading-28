@@ -8,9 +8,9 @@ def main_loop(strat : models.Strategy):
     bg : bridge.Bridge = bridge.Bridge(None) # TODO:
     strategy : models.Strategy = strat(date, bg)
 
-    while True:
+    for date in bg:
         
-        bg.collect_info()
+        
         actions = strategy.actions()
         bg.execute_orders(actions)
         
