@@ -16,6 +16,9 @@ class Strategy():
         '''
         raise NotImplementedError
 
+    def execute_orders(self, actions : List[stock.Order]) -> None:
+        self.bridge.execute_orders(actions)
+
 
 class SimpleMomentum(Strategy):
     # bridge is the method to get outside information

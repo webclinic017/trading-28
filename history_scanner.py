@@ -4,6 +4,8 @@ from ib_insync import *
 
 import sys
 
+import ib_insync
+
 # https://gist.github.com/vladignatyev/06860ec2040cb497f0f3
 def progress(count, total, status=''):
     bar_len = 60
@@ -17,7 +19,7 @@ def progress(count, total, status=''):
 
 if __name__== "__main__":
 
-    ib = IB()
+    ib = ib_insync.IB()
     ib.connect('127.0.0.1', 7497, clientId=1)
 
 
@@ -40,7 +42,7 @@ if __name__== "__main__":
             symbol = row["Symbol"]
             
 
-            contract = Stock(symbol, 'SMART', 'USD', primaryExchange='NASDAQ')
+            contract = ib_insync.Stock(symbol, 'SMART', 'USD', primaryExchange='NASDAQ')
 
             bars = ib.reqHistoricalData(
                 contract,

@@ -3,16 +3,15 @@ from ib_insync import *
 import models
 import bridge
 
-def main_loop(strat : models.Strategy):
+def main_loop(Strategy : models.Strategy):
     date : datetime = None 
     bg : bridge.Bridge = bridge.Bridge(None) # TODO:
-    strategy : models.Strategy = strat(date, bg)
+    strategy : models.Strategy = Strategy(bg)
 
-    for date in bg:
-        
-        
-        actions = strategy.actions()
-        bg.execute_orders(actions)
+    while True:
+        strategy.actions()
+        strategy.execute_orders()
+        bg.new_tick()
         
 
 

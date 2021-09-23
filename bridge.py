@@ -32,8 +32,12 @@ class Bridge():
     def execute_orders(self, actions : List[stock.Order]):
         pass
 
-    def __next__(self):
+    def new_tick(self):
+        '''
+        blocking
+        '''
         self.collect_info()
+        
 
     def collect_info(self):
         raise StopIteration
