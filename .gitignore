@@ -134,3 +134,4 @@ dmypy.json
 *.csv
 
 !data/**
+test.py

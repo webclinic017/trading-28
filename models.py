@@ -5,30 +5,35 @@ import math
 import bridge
 
 class Strategy():
-    def __init__(self, date: datetime, bridge: bridge.Bridge) -> None:
-        self.positions : list[stock.Position] = None
-        self.date = date
+    def __init__(self, bridge: bridge.Bridge) -> None:
         self.bridge = bridge
+        self.orders = []
 
-    def actions(self) -> list:   
+    def actions(self) -> None:   
         '''
         return list of [orders]
         '''
+        self.orders = self._actions()
+
+    def _actions(self) -> list:
         raise NotImplementedError
 
-    def execute_orders(self, actions : List[stock.Order]) -> None:
-        self.bridge.execute_orders(actions)
+    def execute_orders(self) -> None:
+        self.bridge.execute_orders(self.orders)
+        # reset orders list
+        self.orders = []
 
 
 class SimpleMomentum(Strategy):
     # bridge is the method to get outside information
-    def __init__(self, date: datetime, bridge: bridge.Bridge) -> None:
-        super.__init__(date, bridge)
+    def __init__(self, bridge: bridge.Bridge) -> None:
+        super().__init__(bridge)
 
 
-    def actions(self) -> list:
-        # if first day of trading week
-        if not self.bridge.is_trading_day(self.date - datetime.timedelta(days=1)):
+
+    def _actions(self) -> list:
+        # the tick after friday close
+        if not self.bridge.is_trading_day(self.bridge.curtime) and self.bridge.is_trading_day(self.bridge.curtime - datetime.timedelta(days=1)):
             res = []
             budget = (self.bridge.cash * 0.1) / 10
             for s in self.check_buys():
@@ -38,7 +43,7 @@ class SimpleMomentum(Strategy):
             return res
 
         # if last day of trading week
-        elif not self.bridge.is_trading_day(self.date + datetime.timedelta(days=1)): 
+        elif not self.bridge.is_trading_day(self.bridge.curtime + datetime.timedelta(days=1)): 
             return self.sell_all()
 
         # else do nothing
@@ -48,7 +53,7 @@ class SimpleMomentum(Strategy):
     # TODO: move this to Strategy()
     def sell_all(self, buys = {}):
         actions = []
-        for s in self.positions:
+        for s in self.bridge.holdings:
              actions.append(stock.Order.create_mkt_sell(s.ticker))
 
         return actions
@@ -56,8 +61,8 @@ class SimpleMomentum(Strategy):
     def check_buys(self) -> List[str]:
 
         open_date, close_date = self._find_last_trading_week()
-        openday_vals: dict[str, stock.Stock] = self.bridge.get_all_stocks(open_date)
-        closeday_vals: dict[str, stock.Stock] = self.bridge.get_all_stocks(close_date)
+        openday_vals: dict[str, stock.Stock] = self.bridge.get_all_stocks()
+        closeday_vals: dict[str, stock.Stock] = self.bridge.get_all_stocks()
 
         # calculate % delta for all stocks
         pd = {}
@@ -90,4 +95,27 @@ class SimpleMomentum(Strategy):
 
 
     def _find_last_trading_week(self) -> Tuple:
-        pass
+       i = 0
+       flag = 1
+       day = self.bridge.curtime
+
+       while True:          
+            # for the last day, we are going from holiday to the trading day
+            if flag == 1:
+                if self.bridge.is_trading_day(day):
+                    last_day = day
+                    flag = 2
+            # for the first day, we are going from trading day to the last holiday
+            elif flag == 2:
+                if not self.bridge.is_trading_day(day):
+                    first_day = day + datetime.timedelta(days=1)
+                    return (first_day, last_day)
+
+
+
+            if i == 30:
+                raise IndexError("Something is very wrong with the stock market")
+
+            i += 1
+            day -= datetime.timedelta(days=1)
+
