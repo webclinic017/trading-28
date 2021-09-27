@@ -2,7 +2,6 @@ import datetime
 from typing import List, Sized
 import ib_insync
 import stock
-import source
 import csv
 
 
@@ -78,7 +77,7 @@ class Bridge():
 class Simulation(Bridge):
     def __init__(self) -> None:
         super().__init__()
-        history_csv = "data/history.csv"
+        history_csv = "history.csv"
         self.data = {}
         print("Simulation: start")
         self._read_csv(history_csv)
