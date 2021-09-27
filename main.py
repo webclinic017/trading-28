@@ -2,6 +2,8 @@ from datetime import datetime
 from ib_insync import *
 import models
 import bridge
+import time
+
 
 def main_loop(Strategy : models.Strategy):
     date : datetime = None 
@@ -16,4 +18,4 @@ def main_loop(Strategy : models.Strategy):
 
 if __name__== "__main__":
     print("Begin")
-    main_loop(None) # TODO: 
+    main_loop(None) # TODO: 1

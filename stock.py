@@ -1,12 +1,12 @@
 class Stock():
-    def __init__(self, ticker: str, open: float, high: float, low: float, close: float, average: float, volumn: int) -> None:
-        self.ticker: str = ticker,
-        self.open: float = open,
-        self.high: float = high,
-        self.low: float = low,
-        self.close: float = close,
-        self.average: float = average,
-        self.volumn: int = volumn
+    def __init__(self, ticker: str, open: float, high: float, low: float, close: float, average: float, volumn: float) -> None:
+        self.ticker: str = ticker
+        self.open: float = open
+        self.high: float = high
+        self.low: float = low
+        self.close: float = close
+        self.average: float = average
+        self.volumn: float = volumn
 
 
 class Position():
@@ -38,7 +38,7 @@ class Position():
 
 class Order():
 
-    def __init__(self, ticker: str, op: int, type: str, price: int, size: int) -> None:
+    def __init__(self, ticker: str, op: int, type: str, lmt_price: int, size: int) -> None:
         '''
 
         op = 1 or 2 (1 = buy, 2 = sell)
@@ -47,11 +47,11 @@ class Order():
         self.ticker: str = ticker
         self.op: int = op
         self.type: str = type
-        self.price: float = price
+        self.lmt_price: float = lmt_price
         self.size: float = size
 
     def create_mkt_buy(ticker: str, size: float):
-        return Order(ticker, 1, 'MTK', size)
+        return Order(ticker, 1, 'MTK', -1, size)
 
     def create_mkt_sell(ticker: str, size: float):
-        return Order(ticker, 2, 'MTK', size)
+        return Order(ticker, 2, 'MTK', -1, size)

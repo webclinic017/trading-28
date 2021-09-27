@@ -2,14 +2,14 @@ import datetime
 import csv
 from os import write
 import numpy
-from ib_insync import *
+import ib_insync
 
 
 
 
 if __name__== "__main__":
 
-    ib = IB()
+    ib = ib_insync.IB()
     ib.connect('127.0.0.1', 7497, clientId=1)
 
 
@@ -28,6 +28,7 @@ if __name__== "__main__":
 
             ticker = ib.reqMktData(contract, "258")
             ib.sleep(2) 
+            ib.cancelMktData(contract)
 
 
             try:

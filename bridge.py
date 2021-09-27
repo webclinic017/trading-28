@@ -15,6 +15,8 @@ class Bridge():
         self.source = source
         self.holdings = {}
 
+        self.mktcap_cache = {}
+
         # ib
         self.ib = ib_insync.IB()
         self.ib.connect('127.0.0.1', 7497, clientId=1)
@@ -23,21 +25,34 @@ class Bridge():
     def is_trading_day(self, date: datetime.datetime) -> bool:
         raise NotImplementedError
 
-    def get_all_stocks(self) -> dict:
+    def get_all_stocks(self, date: datetime.datetime) -> dict:
         '''
         {ticker : Stock}
         '''
         raise NotImplementedError
 
-    def get_stock(self, ticker: str) -> stock.Stock:
+    def get_stock(self, ticker: str, date: datetime.datetime) -> stock.Stock:
         raise NotImplementedError
 
     def get_market_cap(self, ticker: str) -> float:
-        contract = ib_insync.Stock(ticker, 'SMART', 'USD')
+        
 
+        if ticker in self.mktcap_cache:
+            return self.mktcap_cache[ticker]
+
+
+        contract = ib_insync.Stock(ticker, 'SMART', 'USD', primaryExchange='NASDAQ')
         s = self.ib.reqMktData(contract, "258")
-        self.ib.sleep(2) 
-        return s.fundamentalRatios.MKTCAP
+        self.ib.sleep(2) # TODO: find a way to optimize this
+
+        try:
+            res = s.fundamentalRatios.MKTCAP
+        except:
+            res = 0
+
+        self.ib.cancelMktData(contract)
+        self.mktcap_cache[ticker] = res
+        return res
 
     def execute_orders(self, actions : List[stock.Order]):
         raise NotImplementedError
@@ -63,11 +78,15 @@ class Bridge():
 class Simulation(Bridge):
     def __init__(self) -> None:
         super().__init__()
-        history_csv = "history.csv"
+        history_csv = "data/history.csv"
         self.data = {}
         print("Simulation: start")
         self._read_csv(history_csv)
         self.pending_orders: list[stock.Order] = []
+
+        self._pref_file = open("pref.csv", "w")
+        self._writer = csv.writer(self._pref_file)
+   
 
     def _read_csv(self, history_csv):
         print("Simulation: reading history")
@@ -86,9 +105,10 @@ class Simulation(Bridge):
                         continue
                     elif v == '':
                         continue
-
+                            
                     vals = v.split("|")
-                    temp[k] = stock.Stock(k, vals[0], vals[1], vals[2], vals[3], vals[4], vals[5])
+                    temp[k] = stock.Stock(k, float(vals[0]), float(vals[1]), float(vals[2]), float(vals[3]), float(vals[4]), float(vals[5]))
+                    self.all_tickers.append(k)
 
 
 
@@ -96,23 +116,38 @@ class Simulation(Bridge):
         
         # set curtime to the start time + 10 days
         self.curtime = list(self.data.keys())[0] + datetime.timedelta(days=10)
+        self.all_tickers = list(set(self.all_tickers))
                 
     def is_trading_day(self, date: datetime.datetime = None) -> bool:
 
         if date is None:
             date = self.curtime
+        
+        for k in self.data.keys():
+            if k == date:
+                return True
 
-        return date in self.data
+        return False
 
-    def get_all_stocks(self) -> dict:
+    def get_all_stocks(self, date: datetime.datetime = None) -> dict:
         ''' 
         {ticker : Stock}
         '''
-        return self.data[self.last_trading_tick()]
+
+        if not date:
+            date = self.last_trading_tick()
+
+        return self.data[date]
 
 
-    def get_stock(self, ticker: str) -> stock.Stock:
-        return self.data[self.curtime][ticker]
+    def get_stock(self, ticker: str, date: datetime.datetime = None) -> stock.Stock:
+        if not date:
+            date = self.last_trading_tick()
+
+        try:
+            return self.data[date][ticker]
+        except KeyError:
+            return None
 
 
     def execute_orders(self, actions : List[stock.Order]):
@@ -126,6 +161,11 @@ class Simulation(Bridge):
         # execute orders
         if (self.is_trading_day()):
             for order in self.pending_orders:
+                
+                if not self.get_stock(order.ticker):
+                    self.pending_orders.remove(order)
+                    continue
+
                 if order.op == 1:
                     if order.type == 'MTK':
                         s = self.get_stock(order.ticker)
@@ -133,6 +173,12 @@ class Simulation(Bridge):
                         spent = buying.buy(order.size, s.open)
                         self.holdings[s.ticker] = buying
                         self.pending_orders.remove(order)
+
+                        # do not use margin too much
+                        # TODO: make this variable
+                        if (self.cash - spent < self.net_worth() * -0.1):
+                            continue
+
                         self.cash -= spent
 
                 elif order.op == 2:
@@ -141,18 +187,23 @@ class Simulation(Bridge):
                         gained = self.holdings[s.ticker].sell(order.size, s.open)
                         self.pending_orders.remove(order)
                         self.cash += gained
-
-        print(self.net_worth())
         
         # stop simulation
         if (self.curtime == list(self.data.keys())[-1]):
-            print("Simulatuon: exixiting at " + str(self.curtime))
+            print("Simulation: ends at " + str(self.curtime))
+            self._pref_file.close()
             exit()
+
+        print("Simulation: networth " + str(self.net_worth()))
+        self._writer.writerow([str(self.curtime), str(self.net_worth())])
+        self._pref_file.flush()
                     
     def net_worth(self) -> float:
         res = self.cash
-        for k, v in self.holdings:
-            res += v.size * self.get_stock(v.ticker).close
+        for k, v in self.holdings.items():
+            stk = self.get_stock(k)
+            if stk:
+                res += v.size * stk.close
 
         return res
 

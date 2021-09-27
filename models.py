@@ -34,16 +34,21 @@ class SimpleMomentum(Strategy):
     def _actions(self) -> list:
         # the tick after friday close
         if not self.bridge.is_trading_day(self.bridge.curtime) and self.bridge.is_trading_day(self.bridge.curtime - datetime.timedelta(days=1)):
+            print("SMM: searhing for new stocks")
             res = []
             budget = (self.bridge.cash * 0.1) / 10
             for s in self.check_buys():
-                size = math.ceil(budget / self.bridge.get_stock(s).average)
-                res.append(stock.Order.create_mkt_buy(s, size))
-            
+                st = self.bridge.get_stock(s)
+                if st:
+                    size = math.ceil(budget / st.open)
+                    res.append(stock.Order.create_mkt_buy(s, size))
+
+            print("SMM: buying " + ','.join([s.ticker for s in res]))
             return res
 
         # if last day of trading week
         elif not self.bridge.is_trading_day(self.bridge.curtime + datetime.timedelta(days=1)): 
+            print("SMM: selling all")
             return self.sell_all()
 
         # else do nothing
@@ -53,21 +58,24 @@ class SimpleMomentum(Strategy):
     # TODO: move this to Strategy()
     def sell_all(self, buys = {}):
         actions = []
-        for s in self.bridge.holdings:
-             actions.append(stock.Order.create_mkt_sell(s.ticker))
+        for k, v in self.bridge.holdings.items():
+             actions.append(stock.Order.create_mkt_sell(k, v.size))
 
         return actions
 
     def check_buys(self) -> List[str]:
 
         open_date, close_date = self._find_last_trading_week()
-        openday_vals: dict[str, stock.Stock] = self.bridge.get_all_stocks()
-        closeday_vals: dict[str, stock.Stock] = self.bridge.get_all_stocks()
+        openday_vals: dict[str, stock.Stock] = self.bridge.get_all_stocks(open_date)
+        closeday_vals: dict[str, stock.Stock] = self.bridge.get_all_stocks(close_date)
 
         # calculate % delta for all stocks
         pd = {}
         for s in self.bridge.all_tickers:
-            pd[s] = self._calculate_prec_diff(openday_vals[s].open, closeday_vals[s].close)
+            try: 
+                pd[s] = self._calculate_prec_diff(openday_vals[s].open, closeday_vals[s].close)
+            except KeyError:
+                continue
 
         # sort for largest % delta
         pd = dict(sorted(pd.items(), key=lambda item: item[1], reverse=True))
@@ -75,9 +83,9 @@ class SimpleMomentum(Strategy):
         i = 0
         res = []
         for s in pd:
-            if self.bridge.get_market_cap(s) > 500:
-                res.append(s)
-                i += 1
+            #if self.bridge.get_market_cap(s) > 500:
+            res.append(s)
+            i += 1
 
             if i == 10:
                 break
@@ -90,7 +98,7 @@ class SimpleMomentum(Strategy):
         return self.holding_list
 
 
-    def _calculate_prec_diff(week_open, week_close):
+    def _calculate_prec_diff(self, week_open, week_close):
         return (week_close - week_open) / week_open
 
 
