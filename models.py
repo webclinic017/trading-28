@@ -23,6 +23,21 @@ class Strategy():
         # reset orders list
         self.orders = []
 
+    def _sell_all(self):
+        actions = []
+        for k, v in self.bridge.holdings.items():
+             actions.append(stock.Order.create_mkt_sell(k, v.size))
+
+        return actions
+
+class Random(Strategy):
+    def __init__(self, bridge: bridge.Bridge) -> None:
+        super().__init__(bridge)
+
+    def _actions(self) -> list:
+        # TODO:
+        return super()._actions()
+
 
 class SimpleMomentum(Strategy):
     # bridge is the method to get outside information
@@ -49,19 +64,13 @@ class SimpleMomentum(Strategy):
         # if last day of trading week
         elif not self.bridge.is_trading_day(self.bridge.curtime + datetime.timedelta(days=1)): 
             print("SMM: selling all")
-            return self.sell_all()
+            return self._sell_all()
 
         # else do nothing
         else:
             return []
 
-    # TODO: move this to Strategy()
-    def sell_all(self, buys = {}):
-        actions = []
-        for k, v in self.bridge.holdings.items():
-             actions.append(stock.Order.create_mkt_sell(k, v.size))
 
-        return actions
 
     def check_buys(self) -> List[str]:
 
@@ -91,12 +100,6 @@ class SimpleMomentum(Strategy):
                 break
         
         return res
-
-
-
-    def sell_holdings(self):
-        return self.holding_list
-
 
     def _calculate_prec_diff(self, week_open, week_close):
         return (week_close - week_open) / week_open
