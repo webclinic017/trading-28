@@ -11,7 +11,6 @@ class Bridge():
         self.curtime = None
         self.all_tickers = []
         self.cash = 1000000 # TODO: make it not hard coded
-        self.source = source
         self.holdings = {}
 
         self.mktcap_cache = {}

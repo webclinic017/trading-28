@@ -5,10 +5,9 @@ import bridge
 import time
 
 
-def main_loop(Strategy : models.Strategy):
-    date : datetime = None 
-    bg : bridge.Bridge = bridge.Simulation() # TODO:
-    strategy : models.Strategy = models.SimpleMomentum(bg)
+def main_loop(Bridge: bridge.Bridge, Strategy : models.Strategy):
+    bg : bridge.Bridge = Bridge()
+    strategy : models.Strategy = Strategy(bg)
 
     while True:
         strategy.actions()
@@ -17,5 +16,9 @@ def main_loop(Strategy : models.Strategy):
 
 
 if __name__== "__main__":
+
+    bg = bridge.Simulation
+    strategy = models.SimpleMomentum
+
     print("Begin")
-    main_loop(None) # TODO: 1
+    main_loop(bg, strategy) 
