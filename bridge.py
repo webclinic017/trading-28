@@ -16,8 +16,13 @@ class Bridge():
         self.mktcap_cache = {}
 
         # ib
-        self.ib = ib_insync.IB()
-        self.ib.connect('127.0.0.1', 7497, clientId=1)
+        try:
+            self.ib = ib_insync.IB()
+            self.ib.connect('127.0.0.1', 7497, clientId=1)
+            self.ib_connect = True
+        except:
+            self.ib_connect = False
+
 
 
     def is_trading_day(self, date: datetime.datetime) -> bool:
@@ -28,6 +33,9 @@ class Bridge():
         {ticker : Stock}
         '''
         raise NotImplementedError
+
+    def get_all_tickers(self, date: datetime.datetime) -> list:
+        return list(self.get_all_stocks(date).keys())
 
     def get_stock(self, ticker: str, date: datetime.datetime) -> stock.Stock:
         raise NotImplementedError

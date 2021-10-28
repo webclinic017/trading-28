@@ -18,7 +18,6 @@ def main_loop(Bridge: bridge.Bridge, Strategy : models.Strategy):
 if __name__== "__main__":
 
     bg = bridge.Simulation
-    strategy = models.SimpleMomentum
-
+    strategy = models.Random
     print("Begin")
     main_loop(bg, strategy) 

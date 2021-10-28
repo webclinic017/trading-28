@@ -1,4 +1,5 @@
 import datetime
+import random
 from typing import List, Tuple
 import stock
 import math
@@ -31,12 +32,39 @@ class Strategy():
         return actions
 
 class Random(Strategy):
-    def __init__(self, bridge: bridge.Bridge) -> None:
+    def __init__(self, bridge: bridge.Bridge, num_stcoks: int = 10) -> None:
         super().__init__(bridge)
+        self.num_stcoks = num_stcoks
+        
 
     def _actions(self) -> list:
-        # TODO:
-        return super()._actions()
+        # the tick after friday close
+        if not self.bridge.is_trading_day(self.bridge.curtime) and self.bridge.is_trading_day(self.bridge.curtime - datetime.timedelta(days=1)):
+            print("RM: searhing for new stocks")
+            res = []
+            budget = (self.bridge.cash * 0.1) / self.num_stcoks
+            chosen = random.sample(self.bridge.get_all_tickers(self.bridge.curtime - datetime.timedelta(days=1)), self.num_stcoks)
+
+            for s in chosen:
+                st = self.bridge.get_stock(s)
+                
+                if st:
+                    size = math.ceil(budget / st.open)
+                    res.append(stock.Order.create_mkt_buy(s, size))
+
+            print("SMM: buying " + ','.join([s.ticker for s in res]))
+            return res
+
+        # if last day of trading week
+        elif not self.bridge.is_trading_day(self.bridge.curtime + datetime.timedelta(days=1)): 
+            print("RM: selling all")
+            return self._sell_all()
+
+        # else do nothing
+        else:
+            return []
+
+
 
 
 class SimpleMomentum(Strategy):
